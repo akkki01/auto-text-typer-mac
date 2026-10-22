@@ -19,7 +19,7 @@ Type text sentences with keyboard shortcuts on your Mac. Configure shortcuts, sa
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/auto-text-typer-mac.git
+git clone https://github.com/akkki01/auto-text-typer-mac.git
 cd auto-text-typer-mac
 ```
 
