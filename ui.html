@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auto Text Typer</title>
+<style>
+:root {
+  --bg: #f5f5f7;
+  --surface: #ffffff;
+  --surface-hover: #fafafa;
+  --primary: #007AFF;
+  --primary-hover: #0066d6;
+  --text: #1d1d1f;
+  --text-secondary: #86868b;
+  --border: #d2d2d7;
+  --border-light: #e8e8ed;
+  --success: #34c759;
+  --success-bg: #eafbf0;
+  --danger: #ff3b30;
+  --danger-bg: #fff0ef;
+  --danger-hover: #e0332c;
+  --warning: #ff9f0a;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-lg: 0 10px 40px rgba(0,0,0,0.12);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #000000;
+    --surface: #1c1c1e;
+    --surface-hover: #2c2c2e;
+    --primary: #0A84FF;
+    --primary-hover: #409cff;
+    --text: #f5f5f7;
+    --text-secondary: #8e8e93;
+    --border: #38383a;
+    --border-light: #2c2c2e;
+    --success: #30d158;
+    --success-bg: #0d2e18;
+    --danger: #ff453a;
+    --danger-bg: #3a1515;
+    --danger-hover: #ff6961;
+    --warning: #ff9f0a;
+    --shadow: 0 1px 3px rgba(0,0,0,0.3);
+    --shadow-lg: 0 10px 40px rgba(0,0,0,0.5);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #000000;
+  --surface: #1c1c1e;
+  --surface-hover: #2c2c2e;
+  --primary: #0A84FF;
+  --primary-hover: #409cff;
+  --text: #f5f5f7;
+  --text-secondary: #8e8e93;
+  --border: #38383a;
+  --border-light: #2c2c2e;
+  --success: #30d158;
+  --success-bg: #0d2e18;
+  --danger: #ff453a;
+  --danger-bg: #3a1515;
+  --danger-hover: #ff6961;
+  --warning: #ff9f0a;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-lg: 0 10px 40px rgba(0,0,0,0.5);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+.app {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+}
+.header-left { display: flex; align-items: center; gap: 14px; }
+.header-icon {
+  width: 48px; height: 48px;
+  background: linear-gradient(135deg, var(--primary), #5856d6);
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; color: white;
+}
+.header h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+.header p { font-size: 13px; color: var(--text-secondary); margin-top: 1px; }
+.status-pill {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 13px; font-weight: 600;
+  transition: all 0.2s;
+  user-select: none;
+}
+.status-pill:hover { border-color: var(--primary); }
+.status-pill.active { background: var(--success-bg); border-color: var(--success); color: var(--success); }
+.status-pill.paused { background: var(--danger-bg); border-color: var(--danger); color: var(--danger); }
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: currentColor;
+}
+.status-pill.active .status-dot { animation: pulse 2s infinite; }
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* Cards */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px 12px;
+}
+.card-header h2 { font-size: 15px; font-weight: 700; letter-spacing: -0.2px; }
+.card-body { padding: 0 20px 20px; }
+
+/* Entries */
+.entry-list { display: flex; flex-direction: column; gap: 8px; }
+.entry-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-light);
+  transition: all 0.15s;
+}
+.entry-item:hover { border-color: var(--border); background: var(--surface-hover); }
+.entry-toggle {
+  appearance: none; -webkit-appearance: none;
+  width: 18px; height: 18px;
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.entry-toggle:checked {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.entry-toggle:checked::after {
+  content: '';
+  position: absolute;
+  left: 4px; top: 1px;
+  width: 5px; height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.entry-shortcut {
+  font-family: 'SF Mono', SFMono-Regular, Menlo, monospace;
+  font-size: 12px; font-weight: 600;
+  padding: 4px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  white-space: nowrap;
+  min-width: 64px;
+  text-align: center;
+  letter-spacing: 0.5px;
+}
+.entry-body { flex: 1; min-width: 0; }
+.entry-label { font-size: 13px; font-weight: 600; }
+.entry-text {
+  font-size: 12px; color: var(--text-secondary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 320px;
+}
+.entry-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.icon-btn {
+  width: 32px; height: 32px;
+  border: none; background: transparent;
+  border-radius: 6px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-secondary);
+  font-size: 16px;
+  transition: all 0.15s;
+}
+.icon-btn:hover { background: var(--bg); color: var(--text); }
+.icon-btn.danger:hover { background: var(--danger-bg); color: var(--danger); }
+
+.empty-state {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+.empty-state .empty-icon { font-size: 32px; margin-bottom: 8px; opacity: 0.5; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px;
+  font-size: 13px; font-weight: 600;
+  font-family: var(--font);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+}
+.btn:hover { background: var(--surface-hover); border-color: var(--primary); }
+.btn.primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+.btn.primary:hover { background: var(--primary-hover); }
+.btn.danger { color: var(--danger); }
+.btn.danger:hover { background: var(--danger-bg); border-color: var(--danger); }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Settings */
+.setting-row {
+  display: flex; align-items: center; gap: 16px;
+  padding: 10px 0;
+}
+.setting-row + .setting-row { border-top: 1px solid var(--border-light); }
+.setting-label { font-size: 13px; font-weight: 500; min-width: 160px; }
+.setting-slider {
+  flex: 1;
+  -webkit-appearance: none; appearance: none;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+}
+.setting-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 18px; height: 18px;
+  background: var(--primary);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+.setting-value {
+  font-family: 'SF Mono', SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: var(--text-secondary);
+  min-width: 52px;
+  text-align: right;
+}
+
+/* Config section */
+.config-row {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 8px;
+}
+.config-info {
+  font-size: 12px; color: var(--text-secondary);
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: auto; }
+.modal {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  width: 480px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+  transform: scale(0.95);
+  transition: transform 0.2s;
+}
+.modal-overlay.open .modal { transform: scale(1); }
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px 0;
+}
+.modal-header h3 { font-size: 17px; font-weight: 700; }
+.modal-close {
+  width: 28px; height: 28px;
+  border: none; background: var(--bg);
+  border-radius: 50%; cursor: pointer;
+  font-size: 16px; color: var(--text-secondary);
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.modal-close:hover { background: var(--border); color: var(--text); }
+.modal-body { padding: 20px 24px; }
+.field { margin-bottom: 16px; }
+.field label {
+  display: block; font-size: 13px; font-weight: 600;
+  margin-bottom: 6px; color: var(--text-secondary);
+}
+.field input[type="text"], .field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: var(--font);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.field input[type="text"]:focus, .field textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0,122,255,0.15);
+}
+.field textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
+.record-btn {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 14px; font-weight: 500;
+  font-family: var(--font);
+  background: var(--bg);
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+  outline: none;
+}
+.record-btn:hover { border-color: var(--primary); color: var(--primary); }
+.record-btn.recording {
+  border-color: var(--warning);
+  border-style: solid;
+  color: var(--warning);
+  animation: recording-pulse 1s infinite;
+}
+.record-btn.recorded {
+  border-style: solid;
+  border-color: var(--success);
+  color: var(--text);
+  font-family: 'SF Mono', SFMono-Regular, Menlo, monospace;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 1px;
+}
+@keyframes recording-pulse {
+  0%, 100% { background: var(--bg); }
+  50% { background: rgba(255,159,10,0.08); }
+}
+.modal-footer {
+  display: flex; justify-content: flex-end; gap: 8px;
+  padding: 0 24px 20px;
+}
+
+/* Toast */
+.toast-container {
+  position: fixed; bottom: 24px; right: 24px;
+  z-index: 2000;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.toast {
+  padding: 12px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  font-size: 13px; font-weight: 500;
+  display: flex; align-items: center; gap: 8px;
+  animation: toast-in 0.3s ease;
+}
+.toast.success { border-color: var(--success); }
+.toast.error { border-color: var(--danger); }
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Footer */
+.footer {
+  text-align: center;
+  padding: 16px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div class="header-icon">Aa</div>
+      <div>
+        <h1>Auto Text Typer</h1>
+        <p id="subtitle">Loading...</p>
+      </div>
+    </div>
+    <div class="status-pill active" id="statusPill" onclick="toggleActive()">
+      <span class="status-dot"></span>
+      <span id="statusLabel">Active</span>
+    </div>
+  </div>
+
+  <!-- Shortcuts Card -->
+  <div class="card">
+    <div class="card-header">
+      <h2>Keyboard Shortcuts</h2>
+      <button class="btn primary" onclick="openAddModal()">+ Add Shortcut</button>
+    </div>
+    <div class="card-body">
+      <div class="entry-list" id="entryList">
+        <div class="empty-state">
+          <div class="empty-icon">⌨</div>
+          <div>No shortcuts configured yet.<br>Click <strong>+ Add Shortcut</strong> to get started.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Card -->
+  <div class="card">
+    <div class="card-header">
+      <h2>Typing Speed</h2>
+    </div>
+    <div class="card-body">
+      <div class="setting-row">
+        <span class="setting-label">Key Press Duration</span>
+        <input type="range" class="setting-slider" id="keyDelay" min="1" max="100" value="10"
+               oninput="updateSlider('keyDelay')">
+        <span class="setting-value" id="keyDelayVal">10 ms</span>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Delay Between Characters</span>
+        <input type="range" class="setting-slider" id="charDelay" min="1" max="500" value="30"
+               oninput="updateSlider('charDelay')">
+        <span class="setting-value" id="charDelayVal">30 ms</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Config Card -->
+  <div class="card">
+    <div class="card-header">
+      <h2>Configuration</h2>
+    </div>
+    <div class="card-body">
+      <div class="config-row">
+        <div class="btn-row">
+          <button class="btn" onclick="exportConfig()">&#x1f4e5; Export Config</button>
+          <button class="btn" onclick="document.getElementById('importFile').click()">&#x1f4e4; Import Config</button>
+          <input type="file" id="importFile" accept=".json" hidden onchange="importConfig(event)">
+        </div>
+        <span class="config-info" id="configInfo">Auto-saved to ~/.autotyper/config.json</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">Auto Text Typer for Mac &middot; Shortcuts are active while the server is running</div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">Add Shortcut</h3>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Keyboard Shortcut</label>
+        <button class="record-btn" id="recordBtn" onclick="startRecording()" tabindex="0">
+          Click to record shortcut
+        </button>
+      </div>
+      <div class="field">
+        <label>Label</label>
+        <input type="text" id="entryLabel" placeholder="e.g. Email Greeting, Address, Signature...">
+      </div>
+      <div class="field">
+        <label>Text to Type</label>
+        <textarea id="entryText" placeholder="Enter the text that will be auto-typed when you press the shortcut..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn primary" id="saveBtn" onclick="saveEntry()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+const API = '';
+let entries = [];
+let settings = {};
+let editingId = null;
+let currentShortcut = null;
+let recording = false;
+
+async function api(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(API + path, opts);
+  return r.json();
+}
+
+async function loadConfig() {
+  const data = await api('GET', '/api/config');
+  entries = data.entries || [];
+  settings = data.settings || {};
+  renderEntries();
+  renderSettings();
+  updateSubtitle();
+}
+
+function updateSubtitle() {
+  const n = entries.length;
+  document.getElementById('subtitle').textContent =
+    n === 0 ? 'No shortcuts configured' :
+    `${n} shortcut${n !== 1 ? 's' : ''} configured`;
+}
+
+function formatDisplay(s) {
+  let d = '';
+  if (s.includes('<ctrl>')) d += '⌃';
+  if (s.includes('<shift>')) d += '⇧';
+  if (s.includes('<alt>')) d += '⌥';
+  if (s.includes('<cmd>')) d += '⌘';
+  const parts = s.split('+');
+  const key = parts[parts.length - 1].replace(/[<>]/g, '');
+  d += key.toUpperCase();
+  return d;
+}
+
+function renderEntries() {
+  const list = document.getElementById('entryList');
+  if (entries.length === 0) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">⌨</div>
+        <div>No shortcuts configured yet.<br>Click <strong>+ Add Shortcut</strong> to get started.</div>
+      </div>`;
+    return;
+  }
+  list.innerHTML = entries.map(e => `
+    <div class="entry-item">
+      <input type="checkbox" class="entry-toggle" ${e.enabled !== false ? 'checked' : ''}
+             onchange="toggleEntry('${e.id}', this.checked)">
+      <span class="entry-shortcut">${formatDisplay(e.shortcut)}</span>
+      <div class="entry-body">
+        <div class="entry-label">${esc(e.label || 'Untitled')}</div>
+        <div class="entry-text">${esc(e.text.replace(/\n/g, ' ⏎ '))}</div>
+      </div>
+      <div class="entry-actions">
+        <button class="icon-btn" onclick="openEditModal('${e.id}')" title="Edit">✎</button>
+        <button class="icon-btn danger" onclick="deleteEntry('${e.id}')" title="Delete">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function renderSettings() {
+  const kd = settings.key_delay_ms || 10;
+  const cd = settings.char_delay_ms || 30;
+  document.getElementById('keyDelay').value = kd;
+  document.getElementById('keyDelayVal').textContent = kd + ' ms';
+  document.getElementById('charDelay').value = cd;
+  document.getElementById('charDelayVal').textContent = cd + ' ms';
+}
+
+let settingsTimer = null;
+function updateSlider(which) {
+  const slider = document.getElementById(which);
+  const valEl = document.getElementById(which + 'Val');
+  valEl.textContent = slider.value + ' ms';
+  clearTimeout(settingsTimer);
+  settingsTimer = setTimeout(() => {
+    api('POST', '/api/settings', {
+      key_delay_ms: parseInt(document.getElementById('keyDelay').value),
+      char_delay_ms: parseInt(document.getElementById('charDelay').value),
+    });
+  }, 300);
+}
+
+async function toggleActive() {
+  const data = await api('POST', '/api/toggle');
+  const pill = document.getElementById('statusPill');
+  const label = document.getElementById('statusLabel');
+  if (data.active) {
+    pill.className = 'status-pill active';
+    label.textContent = 'Active';
+  } else {
+    pill.className = 'status-pill paused';
+    label.textContent = 'Paused';
+  }
+}
+
+async function toggleEntry(id, enabled) {
+  await api('PUT', '/api/entries/' + id, { enabled });
+  const e = entries.find(x => x.id === id);
+  if (e) e.enabled = enabled;
+  toast(enabled ? 'Shortcut enabled' : 'Shortcut disabled', 'success');
+}
+
+async function deleteEntry(id) {
+  if (!confirm('Delete this shortcut?')) return;
+  await api('DELETE', '/api/entries/' + id);
+  entries = entries.filter(e => e.id !== id);
+  renderEntries();
+  updateSubtitle();
+  toast('Shortcut deleted', 'success');
+}
+
+function openAddModal() {
+  editingId = null;
+  currentShortcut = null;
+  document.getElementById('modalTitle').textContent = 'Add Shortcut';
+  document.getElementById('recordBtn').textContent = 'Click to record shortcut';
+  document.getElementById('recordBtn').className = 'record-btn';
+  document.getElementById('entryLabel').value = '';
+  document.getElementById('entryText').value = '';
+  document.getElementById('saveBtn').textContent = 'Save';
+  openModal();
+}
+
+function openEditModal(id) {
+  const e = entries.find(x => x.id === id);
+  if (!e) return;
+  editingId = id;
+  currentShortcut = e.shortcut;
+  document.getElementById('modalTitle').textContent = 'Edit Shortcut';
+  document.getElementById('recordBtn').textContent = formatDisplay(e.shortcut);
+  document.getElementById('recordBtn').className = 'record-btn recorded';
+  document.getElementById('entryLabel').value = e.label || '';
+  document.getElementById('entryText').value = e.text || '';
+  document.getElementById('saveBtn').textContent = 'Update';
+  openModal();
+}
+
+function openModal() {
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  recording = false;
+}
+
+function startRecording() {
+  recording = true;
+  const btn = document.getElementById('recordBtn');
+  btn.textContent = 'Press a key combination...';
+  btn.className = 'record-btn recording';
+  btn.focus();
+}
+
+document.addEventListener('keydown', (e) => {
+  if (!recording) return;
+  e.preventDefault();
+  e.stopPropagation();
+
+  if (['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) return;
+
+  const mods = [];
+  if (e.ctrlKey) mods.push('<ctrl>');
+  if (e.shiftKey) mods.push('<shift>');
+  if (e.altKey) mods.push('<alt>');
+  if (e.metaKey) mods.push('<cmd>');
+
+  if (mods.length === 0) {
+    document.getElementById('recordBtn').textContent = 'Use at least one modifier (Ctrl, Shift, Option, Cmd)';
+    return;
+  }
+
+  let key;
+  if (e.code.startsWith('Key')) key = e.code.slice(3).toLowerCase();
+  else if (e.code.startsWith('Digit')) key = e.code.slice(5);
+  else if (e.code.startsWith('Numpad')) key = e.code.slice(6).toLowerCase();
+  else {
+    const codeMap = {
+      'Space': '<space>', 'Enter': '<enter>', 'Tab': '<tab>',
+      'Escape': '<esc>', 'Backspace': '<backspace>', 'Delete': '<delete>',
+      'ArrowUp': '<up>', 'ArrowDown': '<down>', 'ArrowLeft': '<left>', 'ArrowRight': '<right>',
+      'Minus': '-', 'Equal': '=', 'BracketLeft': '[', 'BracketRight': ']',
+      'Backslash': '\\', 'Semicolon': ';', 'Quote': "'", 'Comma': ',',
+      'Period': '.', 'Slash': '/',  'Backquote': '`',
+    };
+    for (let i = 1; i <= 12; i++) codeMap['F' + i] = '<f' + i + '>';
+    key = codeMap[e.code] || e.code.toLowerCase();
+  }
+
+  currentShortcut = [...mods, key].join('+');
+  const btn = document.getElementById('recordBtn');
+  btn.textContent = formatDisplay(currentShortcut);
+  btn.className = 'record-btn recorded';
+  recording = false;
+}, true);
+
+async function saveEntry() {
+  const label = document.getElementById('entryLabel').value.trim();
+  const text = document.getElementById('entryText').value;
+
+  if (!currentShortcut) { toast('Record a keyboard shortcut first', 'error'); return; }
+  if (!text) { toast('Enter the text to type', 'error'); return; }
+
+  const payload = { shortcut: currentShortcut, text, label: label || 'Untitled', enabled: true };
+
+  if (editingId) {
+    await api('PUT', '/api/entries/' + editingId, payload);
+    const idx = entries.findIndex(e => e.id === editingId);
+    if (idx >= 0) Object.assign(entries[idx], payload);
+    toast('Shortcut updated', 'success');
+  } else {
+    const entry = await api('POST', '/api/entries', payload);
+    entries.push(entry);
+    toast('Shortcut added', 'success');
+  }
+
+  renderEntries();
+  updateSubtitle();
+  closeModal();
+}
+
+function exportConfig() {
+  const data = { entries, settings };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'autotyper_config.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Config exported', 'success');
+}
+
+function importConfig(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      const result = await api('POST', '/api/import', data);
+      entries = result.entries || [];
+      settings = result.settings || {};
+      renderEntries();
+      renderSettings();
+      updateSubtitle();
+      toast(`Imported ${entries.length} shortcut(s)`, 'success');
+    } catch (err) {
+      toast('Invalid config file', 'error');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function toast(message, type) {
+  const container = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = 'toast ' + (type || '');
+  t.innerHTML = (type === 'success' ? '✓ ' : type === 'error' ? '✗ ' : '') + esc(message);
+  container.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.3s'; }, 2500);
+  setTimeout(() => t.remove(), 2800);
+}
+
+document.getElementById('modalOverlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !recording) closeModal();
+});
+
+loadConfig();
+setInterval(async () => {
+  try {
+    const s = await api('GET', '/api/status');
+    const pill = document.getElementById('statusPill');
+    const label = document.getElementById('statusLabel');
+    if (s.active) {
+      pill.className = 'status-pill active';
+      label.textContent = s.typing ? 'Typing...' : 'Active';
+    } else {
+      pill.className = 'status-pill paused';
+      label.textContent = 'Paused';
+    }
+  } catch (e) {}
+}, 2000);
+</script>
+</body>
+</html>
